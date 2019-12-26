@@ -12,7 +12,7 @@ module Zipper exposing
 
 import Debug
 import List exposing (append, head, isEmpty, tail)
-import List.Extra as ListE
+import List.Extra exposing (dropWhile, dropWhileRight, find, init, last, takeWhile, takeWhileRight)
 import Maybe exposing (withDefault)
 
 
@@ -25,35 +25,37 @@ type alias Zipper a =
 
 makeZipper : List a -> a -> List a -> Maybe (Zipper a)
 makeZipper previous current next =
-    Just { previous = previous, current = current, next = next }
+    if Just current == Nothing then
+        Nothing
+
+    else
+        Just { previous = previous, current = current, next = next }
 
 
-moveForward : Zipper a -> Maybe (Zipper a)
+moveForward : Zipper a -> Zipper a
 moveForward zipper =
-    Just <|
-        if isEmpty zipper.previous then
-            --TODO: figure out whether it should actually be returning "Nothing"
-            zipper
+    if isEmpty zipper.previous then
+        --TODO: figure out whether it should actually be returning "Nothing"
+        zipper
 
-        else
-            { previous = withDefault [] <| ListE.init zipper.previous
-            , current = withDefault zipper.current <| ListE.last zipper.previous
-            , next = zipper.current :: zipper.next
-            }
+    else
+        { previous = withDefault [] <| init zipper.previous
+        , current = withDefault zipper.current <| last zipper.previous
+        , next = zipper.current :: zipper.next
+        }
 
 
-moveBackwards : Zipper a -> Maybe (Zipper a)
+moveBackwards : Zipper a -> Zipper a
 moveBackwards zipper =
-    Just <|
-        if isEmpty zipper.next then
-            --TODO: figure out whether it should actually be returning "Nothing"
-            zipper
+    if isEmpty zipper.next then
+        --TODO: figure out whether it should actually be returning "Nothing"
+        zipper
 
-        else
-            { previous = append zipper.previous [ zipper.current ]
-            , current = withDefault zipper.current <| head zipper.next
-            , next = withDefault [] <| tail zipper.next
-            }
+    else
+        { previous = append zipper.previous [ zipper.current ]
+        , current = withDefault zipper.current <| head zipper.next
+        , next = withDefault [] <| tail zipper.next
+        }
 
 
 moveForwardTo : a -> Zipper a -> Maybe (Zipper a)
@@ -66,14 +68,22 @@ moveBackwardsTo =
     Debug.todo "make moveBackwardsTo"
 
 
-moveForwardWhile : (a -> Bool) -> Zipper a -> Maybe (Zipper a)
-moveForwardWhile =
-    Debug.todo "make moveForwardWhile"
+moveForwardWhile : (a -> Bool) -> Zipper a -> Zipper a
+moveForwardWhile ifCondition zipper =
+    if ifCondition zipper.current then
+        moveForwardWhile ifCondition << moveForward <| zipper
+
+    else
+        zipper
 
 
-moveBackwardsWhile : (a -> Bool) -> Zipper a -> Maybe (Zipper a)
-moveBackwardsWhile =
-    Debug.todo "make moveBackwardsWhile"
+moveBackwardsWhile : (a -> Bool) -> Zipper a -> Zipper a
+moveBackwardsWhile ifCondition zipper =
+    if ifCondition zipper.current then
+        moveBackwardsWhile ifCondition << moveBackwards <| zipper
+
+    else
+        zipper
 
 
 getCurrent : Zipper a -> a
