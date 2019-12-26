@@ -10,9 +10,8 @@ module Zipper exposing
     , moveForwardWhile
     )
 
-import Debug
 import List exposing (append, head, isEmpty, tail)
-import List.Extra exposing (dropWhile, dropWhileRight, find, init, last, takeWhile, takeWhileRight)
+import List.Extra exposing (init, last)
 import Maybe exposing (withDefault)
 
 
@@ -35,7 +34,6 @@ makeZipper previous current next =
 moveForward : Zipper a -> Zipper a
 moveForward zipper =
     if isEmpty zipper.previous then
-        --TODO: figure out whether it should actually be returning "Nothing"
         zipper
 
     else
@@ -48,7 +46,6 @@ moveForward zipper =
 moveBackwards : Zipper a -> Zipper a
 moveBackwards zipper =
     if isEmpty zipper.next then
-        --TODO: figure out whether it should actually be returning "Nothing"
         zipper
 
     else
@@ -58,14 +55,22 @@ moveBackwards zipper =
         }
 
 
-moveForwardTo : a -> Zipper a -> Maybe (Zipper a)
-moveForwardTo =
-    Debug.todo "make moveForwardTo"
+moveForwardTo : a -> Zipper a -> Zipper a
+moveForwardTo wantedCurrent zipper =
+    if wantedCurrent == zipper.current then
+        zipper
+
+    else
+        moveForwardTo wantedCurrent << moveForward <| zipper
 
 
-moveBackwardsTo : a -> Zipper a -> Maybe (Zipper a)
-moveBackwardsTo =
-    Debug.todo "make moveBackwardsTo"
+moveBackwardsTo : a -> Zipper a -> Zipper a
+moveBackwardsTo wantedCurrent zipper =
+    if wantedCurrent == zipper.current then
+        zipper
+
+    else
+        moveBackwardsTo wantedCurrent << moveForward <| zipper
 
 
 moveForwardWhile : (a -> Bool) -> Zipper a -> Zipper a
