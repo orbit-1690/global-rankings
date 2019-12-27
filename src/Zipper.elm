@@ -29,11 +29,6 @@ makeZipper previous current next =
     { previous = previous, current = current, next = next }
 
 
-moveForward : Zipper a -> Maybe (Zipper a)
-moveForward zipper =
-    map flipZipp << moveForward << flipZipp <| zipper
-
-
 moveBackwards : Zipper a -> Maybe (Zipper a)
 moveBackwards zipper =
     case init zipper.previous of
@@ -46,6 +41,11 @@ moveBackwards zipper =
                 , current = withDefault zipper.current <| last zipper.previous
                 , next = zipper.current :: zipper.next
                 }
+
+
+moveForward : Zipper a -> Maybe (Zipper a)
+moveForward zipper =
+    map flipZipp << moveForward << flipZipp <| zipper
 
 
 flipZipp : Zipper a -> Zipper a
