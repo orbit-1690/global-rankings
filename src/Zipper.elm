@@ -1,6 +1,8 @@
 module Zipper exposing
     ( Zipper
     , getCurrent
+    , getNext
+    , getPrevious
     , makeZipper
     , moveBackwards
     , moveBackwardsTo
@@ -10,7 +12,9 @@ module Zipper exposing
     , moveForwardWhile
     )
 
-import Debug
+import List exposing (reverse)
+import List.Extra exposing (init, last)
+import Maybe exposing (andThen, map, withDefault)
 
 
 type alias Zipper a =
@@ -20,41 +24,84 @@ type alias Zipper a =
     }
 
 
-makeZipper : List a -> a -> List a -> Maybe (Zipper a)
-makeZipper =
-    Debug.todo "make Zipper"
-
-
-moveForward : Zipper a -> Maybe (Zipper a)
-moveForward =
-    Debug.todo "make moveForward"
+makeZipper : List a -> a -> List a -> Zipper a
+makeZipper previous current next =
+    { previous = previous, current = current, next = next }
 
 
 moveBackwards : Zipper a -> Maybe (Zipper a)
-moveBackwards =
-    Debug.todo "make moveBackwards"
+moveBackwards zipper =
+    case init zipper.previous of
+        Nothing ->
+            Nothing
+
+        Just choppedPrevious ->
+            Just <|
+                { previous = choppedPrevious
+                , current = withDefault zipper.current <| last zipper.previous
+                , next = zipper.current :: zipper.next
+                }
+
+
+moveForward : Zipper a -> Maybe (Zipper a)
+moveForward zipper =
+    map flipZipp << moveForward << flipZipp <| zipper
+
+
+flipZipp : Zipper a -> Zipper a
+flipZipp zipper =
+    { previous = reverse zipper.next
+    , current = zipper.current
+    , next = reverse zipper.previous
+    }
 
 
 moveForwardTo : a -> Zipper a -> Maybe (Zipper a)
-moveForwardTo =
-    Debug.todo "make moveForwardTo"
+moveForwardTo wantedCurrent zipper =
+    if wantedCurrent == zipper.current then
+        Just zipper
+
+    else
+        andThen (moveForwardTo wantedCurrent) <| moveForward zipper
 
 
 moveBackwardsTo : a -> Zipper a -> Maybe (Zipper a)
-moveBackwardsTo =
-    Debug.todo "make moveBackwardsTo"
+moveBackwardsTo wantedCurrent zipper =
+    if wantedCurrent == zipper.current then
+        Just zipper
+
+    else
+        andThen (moveBackwardsTo wantedCurrent) <| moveBackwards zipper
 
 
 moveForwardWhile : (a -> Bool) -> Zipper a -> Maybe (Zipper a)
-moveForwardWhile =
-    Debug.todo "make moveForwardWhile"
+moveForwardWhile ifCondition zipper =
+    if ifCondition zipper.current then
+        andThen (moveForwardWhile ifCondition) <| moveForward zipper
+
+    else
+        Just zipper
 
 
 moveBackwardsWhile : (a -> Bool) -> Zipper a -> Maybe (Zipper a)
-moveBackwardsWhile =
-    Debug.todo "make moveBackwardsWhile"
+moveBackwardsWhile ifCondition zipper =
+    if ifCondition zipper.current then
+        andThen (moveBackwardsWhile ifCondition) <| moveBackwards zipper
+
+    else
+        Just zipper
+
+
+getPrevious : Zipper a -> List a
+getPrevious =
+    .previous
 
 
 getCurrent : Zipper a -> a
 getCurrent =
-    Debug.todo "make getCurrent"
+    .current
+
+
+getNext : Zipper a -> List a
+getNext =
+    .next
