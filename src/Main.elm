@@ -32,11 +32,6 @@ type alias Model =
     }
 
 
-type CurrentScreen
-    = Setup
-    | Ranking
-
-
 init : Model
 init =
     { setupModel = Setup.init
