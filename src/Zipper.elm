@@ -105,3 +105,4 @@ getCurrent =
 getNext : Zipper a -> List a
 getNext =
     .next
+        >>>>>>> df0d69b585108131139b300fae8576701b43c60a
