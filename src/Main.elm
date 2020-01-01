@@ -1,10 +1,7 @@
 module Main exposing (init, main, update, view)
 
 import Browser
-import Element exposing (centerX, centerY, el, fill, height, html, layout, map, maximum, padding, rgb255, shrink, spacing, text, width)
-import Element.Background as Background
-import Element.Border as Border
-import Element.Font exposing (center)
+import Element exposing (centerX, centerY, el, layout, map, text)
 import Element.Input exposing (button)
 import Ranking
 import Setup
@@ -26,17 +23,22 @@ type Msg
 
 
 type alias Model =
-    { setupModel : Setup.Model
-    , rankingModel : Ranking.Model
-    , switchButton : Bool
+    { setup : Setup.Model
+    , ranking : Ranking.Model
+    , screen : CurrentScreen
     }
+
+
+type CurrentScreen
+    = Setup
+    | Ranking
 
 
 init : Model
 init =
-    { setupModel = Setup.init
-    , rankingModel = Ranking.init
-    , switchButton = False
+    { setup = Setup.init
+    , ranking = Ranking.init
+    , screen = Setup
     }
 
 
@@ -44,34 +46,42 @@ update : Msg -> Model -> Model
 update msg model =
     case msg of
         SetupMsg setupMsg ->
-            { model | setupModel = Setup.update setupMsg model.setupModel }
+            { model | setup = Setup.update setupMsg model.setup }
 
         RankingMsg rankingMsg ->
-            { model | rankingModel = Ranking.update rankingMsg model.rankingModel }
+            { model | ranking = Ranking.update rankingMsg model.ranking }
 
         SwitchView ->
-            { model | switchButton = not model.switchButton }
+            { model
+                | screen =
+                    case model.screen of
+                        Setup ->
+                            Ranking
+
+                        Ranking ->
+                            Setup
+            }
 
 
 view : Model -> Element.Element Msg
 view model =
     let
-        switchButton =
+        switchScreen =
             button []
                 { onPress = Just SwitchView
                 , label = text "switch view"
                 }
-    in
-    if model.switchButton then
-        el [ centerX, centerY ]
-            << map RankingMsg
-            << Ranking.view
-        <|
-            model.rankingModel
 
-    else
-        el [ centerX, centerY ]
-            << map SetupMsg
-            << Setup.view
-        <|
-            model.setupModel
+        element xMsg xView xModel =
+            el [ centerX, centerY ]
+                << map xMsg
+                << xView
+            <|
+                xModel model
+    in
+    case model.screen of
+        Setup ->
+            element SetupMsg Setup.view .setup
+
+        Ranking ->
+            element RankingMsg Ranking.view .ranking

@@ -11,7 +11,8 @@
             "elm/html": "1.0.0",
             "elm-community/list-extra": "8.2.2",
             "elm-community/maybe-extra": "5.1.0",
-            "mdgriffith/elm-ui": "1.1.5"
+            "mdgriffith/elm-ui": "1.1.5",
+            "wernerdegroot/listzipper": "4.0.0"
         },
         "indirect": {
             "elm/json": "1.1.3",
