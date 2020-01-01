@@ -182,6 +182,7 @@ view model =
             , factorInput model.offSeasonFactor "Off Season Factor:" <| OffSeasonFactor << stringToFloat
             , factorInput model.playOffFactor "PlayOff Factor:      " <| PlayOffFactor << stringToFloat
             , factorInput model.einsteinFactor "Einstein Factor:     " <| EinsteinFactor << stringToFloat
+
             , continueButton
             ]
         ]
