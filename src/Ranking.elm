@@ -1,15 +1,15 @@
 module Ranking exposing (Model, Msg, init, update, view)
 
 import Browser
-import List.Zipper exposing (current, after)
-import SetZipper exposing (crateZipper)
 import Colors exposing (black, blue, blueGreen, lightBlue, orange, purple, sky, white)
 import Element exposing (centerX, centerY, column, fill, height, html, layout, maximum, padding, rgb255, shrink, spacing, text, width)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font exposing (center)
 import Element.Input as Input exposing (button)
+import List.Zipper exposing (Zipper, after, current, fromCons, isLast, next, toList, withDefault)
 import Maybe
+import SetZipper exposing (Team, createZipper)
 import String
 
 
@@ -23,10 +23,9 @@ main =
 
 
 type alias Model =
-    { teams : Zipper (Zipper Team)
-    , isShowingInfo : Bool -- What I need to do with this variable?
+    { teams : Zipper Team
+    , isShowingInfo : Bool
     , inPage : Int
-    , windowHeight : Int
     }
 
 
@@ -34,38 +33,50 @@ type Msg
     = NextPage
 
 
-type alias Team =
-    { number : Int
-    , name : String
-    , score : Float
-    }
-
-
-moveZipperBy : Int -> Zipper a -> Zipper a -- Never failed
+moveZipperBy : Int -> Zipper a -> Zipper a
 moveZipperBy moveBy zipper =
-    let
-        zipperNextCurrent : Maybe (Zipper a)
-        zipperNextCurrent = next zipper
-    in
-        if moveBy == 0 || zipperNextCurrent == Nothing then
-            zipper
-        else
-            next zipper
-            moveZipperBy (moveBy - 1) zipper
+    if moveBy == 0 || isLast zipper then
+        zipper
+
+    else
+        moveZipperBy (moveBy - 1) <| withDefault (current zipper) <| next zipper
 
 
 getNeededList : Int -> Zipper a -> List a
 getNeededList neededInPage zipper =
-    List.take neededInPage <| (current zipper) :: after zipper
+    List.take neededInPage <| current zipper :: after zipper
 
 
-init : Flags -> Model
-init flags =
-    crateZipper False 0 flags.windowHeight
+teamToString : Team -> String
+teamToString team =
+    String.fromInt team.number
+        ++ " "
+        ++ team.name
+        ++ " "
+        ++ String.fromInt team.score
+
+
+init : Model
+init =
+    let
+        _ =
+            Debug.log "Teams" (String.concat <| List.map teamToString <| getNeededList 4 createZipper)
+
+        inPageUp =
+            min 2 <| List.length <| toList createZipper
+    in
+    { teams = createZipper, isShowingInfo = False, inPage = inPageUp }
 
 
 view : Model -> Element.Element Msg
 view model =
+    let
+        _ =
+            Debug.log "Teams" (String.concat <| List.map teamToString <| getNeededList model.inPage model.teams)
+
+        _ =
+            Debug.log "get needed list" (getNeededList model.inPage model.teams)
+    in
     column
         [ Background.color lightBlue
         , padding 10
@@ -73,10 +84,10 @@ view model =
         , width fill
         , height fill
         ]
-        [ text <| String.fromList <| getNeededList model.inPage model.teams -- show on screen
+        [ text <| String.concat <| List.map teamToString <| getNeededList model.inPage model.teams
         , button
             [ Border.rounded 10
-                , Background.gradient
+            , Background.gradient
                 { angle = 2
                 , steps = [ purple, orange, blueGreen ]
                 }
@@ -90,16 +101,20 @@ view model =
             }
         ]
 
-var app = Elm.Main.fullscreen({ windowHeight: window.innerHeight })
-
 
 update : Msg -> Model -> Model
 update msg model =
-    model.inPage = mod (List.length <| toList model.teams) <| model.windowHeight * 0.25 -- Constant according to our needs
-    case msg of
-    NextPage ->
-        { model | moveZipperBy inPage model }
+    let
+        inPage : Int
+        inPage =
+            min 2 (List.length <| toList model.teams)
 
-        _ ->
-            model
-        
+        _ =
+            Debug.log "in page" inPage
+
+        _ =
+            Debug.log "zipper" (moveZipperBy inPage model.teams)
+    in
+    case msg of
+        NextPage ->
+            { model | teams = moveZipperBy inPage model.teams, inPage = inPage }
