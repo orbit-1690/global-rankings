@@ -2,12 +2,13 @@ module Ranking exposing (Model, Msg, init, update, view)
 
 import Browser
 import Colors exposing (black, blue, blueGreen, lightBlue, orange, purple, sky, white)
-import Element exposing (centerX, centerY, column, fill, height, html, layout, maximum, padding, rgb255, shrink, spacing, text, width)
+import Element exposing (alignLeft, alignRight, centerX, centerY, column, el, fill, height, html, layout, maximum, padding, rgb255, shrink, spacing, table, text, width)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font exposing (center)
 import Element.Input as Input exposing (button)
-import List.Zipper exposing (Zipper, after, current, fromCons, isLast, next, toList, withDefault)
+import List.Extra exposing (count, getAt, takeWhileRight)
+import List.Zipper exposing (Zipper, after, current, isLast, next, toList, withDefault)
 import Maybe
 import SetZipper exposing (Team, createZipper)
 import String
@@ -42,6 +43,33 @@ moveZipperBy moveBy zipper =
         moveZipperBy (moveBy - 1) <| withDefault (current zipper) <| next zipper
 
 
+arrangementThePage : List Team -> Element.Element Msg
+arrangementThePage listOfTeams =
+    table []
+        { data = listOfTeams
+        , columns =
+            [ { header = Element.text "Number"
+              , width = fill
+              , view =
+                    \team ->
+                        Element.text <| String.fromInt team.number
+              }
+            , { header = Element.text "Score"
+              , width = fill
+              , view =
+                    \team ->
+                        Element.text <| String.fromInt team.score
+              }
+            , { header = Element.text "Name"
+              , width = fill
+              , view =
+                    \team ->
+                        Element.text team.name
+              }
+            ]
+        }
+
+
 getNeededList : Int -> Zipper a -> List a
 getNeededList neededInPage zipper =
     List.take neededInPage <| current zipper :: after zipper
@@ -59,9 +87,6 @@ teamToString team =
 init : Model
 init =
     let
-        _ =
-            Debug.log "Teams" (String.concat <| List.map teamToString <| getNeededList 4 createZipper)
-
         inPageUp =
             min 2 <| List.length <| toList createZipper
     in
@@ -70,13 +95,6 @@ init =
 
 view : Model -> Element.Element Msg
 view model =
-    let
-        _ =
-            Debug.log "Teams" (String.concat <| List.map teamToString <| getNeededList model.inPage model.teams)
-
-        _ =
-            Debug.log "get needed list" (getNeededList model.inPage model.teams)
-    in
     column
         [ Background.color lightBlue
         , padding 10
@@ -84,7 +102,7 @@ view model =
         , width fill
         , height fill
         ]
-        [ text <| String.concat <| List.map teamToString <| getNeededList model.inPage model.teams
+        [ arrangementThePage <| getNeededList model.inPage model.teams
         , button
             [ Border.rounded 10
             , Background.gradient
@@ -108,12 +126,6 @@ update msg model =
         inPage : Int
         inPage =
             min 2 (List.length <| toList model.teams)
-
-        _ =
-            Debug.log "in page" inPage
-
-        _ =
-            Debug.log "zipper" (moveZipperBy inPage model.teams)
     in
     case msg of
         NextPage ->
