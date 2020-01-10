@@ -32,6 +32,7 @@ type alias Model =
 
 type Msg
     = NextPage
+    | OpenInfo
 
 
 moveZipperBy : Int -> Zipper a -> Zipper a
@@ -48,23 +49,32 @@ arrangementThePage listOfTeams =
     table []
         { data = listOfTeams
         , columns =
-            [ { header = Element.text "Number"
+            [ { header = text ""
               , width = fill
               , view =
-                    \team ->
-                        Element.text <| String.fromInt team.number
+                    \buttonMsg ->
+                        button []
+                            { onPress = Just OpenInfo
+                            , label = text ">"
+                            }
               }
-            , { header = Element.text "Score"
+            , { header = text "Number"
               , width = fill
               , view =
                     \team ->
-                        Element.text <| String.fromInt team.score
+                        text <| String.fromInt team.number
               }
-            , { header = Element.text "Name"
+            , { header = text "Score"
               , width = fill
               , view =
                     \team ->
-                        Element.text team.name
+                        text <| String.fromInt team.score
+              }
+            , { header = text "Name"
+              , width = fill
+              , view =
+                    \team ->
+                        text team.name
               }
             ]
         }
@@ -75,20 +85,12 @@ getNeededList neededInPage zipper =
     List.take neededInPage <| current zipper :: after zipper
 
 
-teamToString : Team -> String
-teamToString team =
-    String.fromInt team.number
-        ++ " "
-        ++ team.name
-        ++ " "
-        ++ String.fromInt team.score
-
 
 init : Model
 init =
     let
         inPageUp =
-            min 2 <| List.length <| toList createZipper
+            min 3 <| List.length <| toList createZipper
     in
     { teams = createZipper, isShowingInfo = False, inPage = inPageUp }
 
@@ -115,7 +117,7 @@ view model =
             , width <| maximum 350 <| fill
             ]
             { onPress = Just NextPage
-            , label = Element.text "Next Page"
+            , label = text "Next Page"
             }
         ]
 
@@ -125,8 +127,15 @@ update msg model =
     let
         inPage : Int
         inPage =
-            min 2 (List.length <| toList model.teams)
+            min 3 (List.length <| toList model.teams)
     in
     case msg of
         NextPage ->
             { model | teams = moveZipperBy inPage model.teams, inPage = inPage }
+
+        OpenInfo ->
+            if model.isShowingInfo then
+                { model | isShowingInfo = False }
+
+            else
+                { model | isShowingInfo = True }
