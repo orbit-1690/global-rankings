@@ -18,7 +18,6 @@ type alias Model =
     , slider2 : Int
     }
 
-
 type Msg
     = Slider1 Int
     | Slider2 Int
@@ -90,6 +89,7 @@ factorInput value labelText sendMsg =
             , text = String.fromFloat value
             , label = Input.labelLeft [ centerY, centerX, Font.size 30 ] <| Element.text labelText
             }
+
 
 
 continueButton : Element Msg
@@ -184,4 +184,3 @@ view model =
             , factorInput model.einsteinFactor "Einstein Factor:     " <| EinsteinFactor << stringToFloat
             , continueButton
             ]
-        ]
