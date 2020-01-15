@@ -1,11 +1,12 @@
 module Setup exposing (Model, Msg, init, main, update, view)
 
 import Browser
-import Element exposing (Element, el, px, rgb255, text)
-import Element.Background as Background
+import Element exposing (Element, centerX, centerY, el, px, rgb255, text)
+import Element.Background exposing (color)
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
+import Maybe exposing (withDefault)
 
 
 type alias Model =
@@ -16,7 +17,6 @@ type alias Model =
     , slider1 : Int
     , slider2 : Int
     }
-
 
 type Msg
     = Slider1 Int
@@ -50,44 +50,34 @@ init =
 
 stringToFloat : String -> Float
 stringToFloat number =
-    let
-        maybeFloat =
-            String.toFloat number
-    in
-    case maybeFloat of
-        Nothing ->
-            0
-
-        Just value ->
-            value
+    withDefault 0 <| String.toFloat number
 
 
 yearsInput : Int -> Input.Label Msg -> (Float -> Msg) -> Element Msg
 yearsInput value label onChange =
-    el [ Element.centerX, Element.width <| px 345 ] <|
-        Input.slider
-            [ Element.height (Element.px 20)
-            , Element.behindContent
-                (Element.el
+    { onChange = onChange
+    , label = label
+    , min = 2007
+    , max = 2019
+    , step = Just 1
+    , value = toFloat value
+    , thumb =
+        Input.defaultThumb
+    }
+        |> Input.slider
+            [ Element.height <| Element.px 20
+            , Element.behindContent <|
+                Element.el
                     [ Element.width Element.fill
-                    , Element.height (Element.px 6)
-                    , Element.centerY
-                    , Background.color <| rgb255 0 0 200
+                    , Element.height <| Element.px 6
+                    , centerY
+                    , color <| rgb255 0 0 200
                     , Border.rounded 4
-                    , Element.centerX
+                    , centerX
                     ]
                     Element.none
-                )
             ]
-            { onChange = onChange
-            , label = label
-            , min = 2007
-            , max = 2019
-            , step = Just 1
-            , value = toFloat value
-            , thumb =
-                Input.defaultThumb
-            }
+        |> el [ centerX, Element.width <| px 345 ]
 
 
 factorInput : Float -> String -> (String -> Msg) -> Element Msg
@@ -97,15 +87,16 @@ factorInput value labelText sendMsg =
             { onChange = sendMsg
             , placeholder = Nothing
             , text = String.fromFloat value
-            , label = Input.labelLeft [ Element.centerY, Element.centerX, Font.size 30 ] <| Element.text labelText
+            , label = Input.labelLeft [ centerY, centerX, Font.size 30 ] <| Element.text labelText
             }
+
 
 
 continueButton : Element Msg
 continueButton =
-    el [ Element.centerX, Element.centerY ] <|
+    el [ centerX, centerY ] <|
         Input.button
-            [ Background.color <| Element.rgb255 255 255 255
+            [ color <| Element.rgb255 255 255 255
             , Border.rounded 7
             , Font.size 30
             , Font.color <| Element.rgb255 0 0 200
@@ -168,22 +159,29 @@ view model =
         startYear =
             smallerYear model.slider1 model.slider2
     in
-    Element.column [ Element.centerX, Element.moveDown 200, Element.scale 1.9 ]
-        [ yearsInput
-            model.slider1
-            (Input.labelAbove [ Font.color <| rgb255 0 0 200, Font.size 43, Element.centerX ] (text "Years:"))
-            (\number -> Slider1 <| round number)
-        , yearsInput
-            model.slider2
-            (Input.labelBelow [ Font.color <| rgb255 0 0 200, Font.size 40, Element.alignLeft ]
-                (text <| "From " ++ String.fromInt startYear ++ " To " ++ String.fromInt endYear)
-            )
-            (\number -> Slider2 <| round number)
-        , Element.column [ Element.centerX, Element.scale 1.1, Element.moveDown 25 ]
-            [ factorInput model.districtFactor "District Factor:       " (\number -> DistrictFactor <| stringToFloat number)
-            , factorInput model.offSeasonFactor "Off Season Factor:" (\number -> OffSeasonFactor <| stringToFloat number)
-            , factorInput model.playOffFactor "PlayOff Factor:      " (\number -> PlayOffFactor <| stringToFloat number)
-            , factorInput model.einsteinFactor "Einstein Factor:     " (\number -> EinsteinFactor <| stringToFloat number)
+    Element.column [ centerX, Element.moveDown 200, Element.scale 1.9 ]
+        [ (Slider1 << round)
+            |> yearsInput
+                model.slider1
+                (Input.labelAbove [ Font.color <| rgb255 0 0 200, Font.size 43, centerX ] <| text "Years:")
+        , (Slider2 << round)
+            |> yearsInput
+                model.slider2
+                (Input.labelBelow [ Font.color <| rgb255 0 0 200, Font.size 40, Element.alignLeft ]
+                    << text
+                 <|
+                    String.concat
+                        [ "From "
+                        , String.fromInt startYear
+                        , " To "
+                        , String.fromInt endYear
+                        ]
+                )
+        , Element.column [ centerX, Element.scale 1.1, Element.moveDown 25 ]
+            [ factorInput model.districtFactor "District Factor:       " <| DistrictFactor << stringToFloat
+            , factorInput model.offSeasonFactor "Off Season Factor:" <| OffSeasonFactor << stringToFloat
+            , factorInput model.playOffFactor "PlayOff Factor:      " <| PlayOffFactor << stringToFloat
+            , factorInput model.einsteinFactor "Einstein Factor:     " <| EinsteinFactor << stringToFloat
+
             , continueButton
             ]
-        ]
