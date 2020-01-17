@@ -1,7 +1,7 @@
 module Ranking exposing (Model, Msg, init, update, view)
 
 import Browser
-import Colors exposing (black, blue, blueGreen, lightBlue, orange, purple, sky, white)
+import Colors exposing (blueGreen, lightBlue, orange, purple)
 import Element exposing (centerX, centerY, column, fill, height, html, layout, maximum, padding, rgb255, shrink, spacing, text, width)
 import Element.Background as Background
 import Element.Border as Border
@@ -78,12 +78,7 @@ view model =
             Debug.log "get needed list" (getNeededList model.inPage model.teams)
     in
     column
-        [ Background.color lightBlue
-        , padding 10
-        , spacing 10
-        , width fill
-        , height fill
-        ]
+        [ centerX ]
         [ text <| String.concat <| List.map teamToString <| getNeededList model.inPage model.teams
         , button
             [ Border.rounded 10
@@ -91,9 +86,6 @@ view model =
                 { angle = 2
                 , steps = [ purple, orange, blueGreen ]
                 }
-            , center
-            , centerX
-            , centerY
             , width <| maximum 350 <| fill
             ]
             { onPress = Just NextPage

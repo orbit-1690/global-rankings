@@ -7,18 +7,22 @@ import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font exposing (center)
 import Element.Input as Input exposing (button)
+import Http
+import Json.Decode as JD
 import Maybe
 import Ranking
+import RemoteData
 import Setup exposing (Model)
 import String
 
 
 main : Program () Model Msg
 main =
-    Browser.sandbox
-        { init = init
+    Browser.element
+        { init = always init
         , view = view >> layout []
         , update = update
+        , subscriptions = always Sub.none
         }
 
 
@@ -28,15 +32,27 @@ type Pages
 
 
 type Msg
-    = RankingMsg Ranking.Msg
-    | SetupMsg Setup.Msg
+    = RankingM Ranking.Msg
+    | SetupM Setup.Msg
     | Switch
+    | GotRankings (RemoteData.RemoteData Http.Error TeamRankings)
+
+
+type alias TeamRankings =
+    List RankedTeam
+
+
+type alias RankedTeam =
+    { name : String
+    , position : Int
+    }
 
 
 type alias Model =
     { setup : Setup.Model
     , ranking : Ranking.Model
     , pages : Pages
+    , rankings : RemoteData.RemoteData Http.Error TeamRankings
     }
 
 
@@ -66,37 +82,103 @@ switchButton string =
             }
 
 
-init : Model
+rankingParser : JD.Decoder TeamRankings
+rankingParser =
+    JD.map2 RankedTeam (JD.field "team_key" JD.string) (JD.field "rank" JD.int)
+        |> JD.list
+        |> JD.field "rankings"
+
+
+init : ( Model, Cmd Msg )
 init =
-    { setup = Setup.init 1 1 1 1 2017 2020
-    , ranking = Ranking.init
-    , pages = Setup
-    }
+    ( { setup = Setup.init 1 1 1 1 2017 2020
+      , ranking = Ranking.init
+      , pages = Setup
+      , rankings = RemoteData.Loading
+      }
+    , Http.get
+        { url = "http://localhost:1690/TBA"
+        , expect = Http.expectJson (GotRankings << RemoteData.fromResult) rankingParser
+        }
+    )
 
 
-update : Msg -> Model -> Model
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        RankingMsg rMsg ->
-            { model | ranking = Ranking.update rMsg model.ranking }
+        RankingM rMsg ->
+            ( { model | ranking = Ranking.update rMsg model.ranking }, Cmd.none )
 
-        SetupMsg sMsg ->
-            { model | setup = Setup.update sMsg model.setup }
+        SetupM sMsg ->
+            ( { model | setup = Setup.update sMsg model.setup }, Cmd.none )
 
         Switch ->
             if model.pages == Ranking then
-                { model | pages = Setup }
+                ( { model | pages = Setup }, Cmd.none )
 
             else
-                { model | pages = Ranking }
+                ( { model | pages = Ranking }, Cmd.none )
+
+        GotRankings rankings ->
+            ( { model | rankings = rankings }, Cmd.none )
+
+
+
+{-
+   = BadUrl String
+    | Timeout
+    | NetworkError
+    | BadStatus Int
+    | BadBody String
+
+-}
 
 
 view : Model -> Element.Element Msg
 view model =
+    let
+        rankingDisplay : Element.Element Msg
+        rankingDisplay =
+            case rankings of
+                Err httpError ->
+                    case httpError of
+                        Http.BadUrl badUrl ->
+                            Element.text <| "bad url" ++ badUrl
+
+                        Http.Timeout ->
+                            let
+                                _ =
+                                    Debug.log "timeout" ""
+                            in
+                            Element.none
+                        Http.NetworkError ->
+                            let
+                                _ =
+                                    Debug.log "network error" ""
+                            in
+                            Element.none
+
+                        Http.BadStatus code ->
+                            let
+                                _ =
+                                    Debug.log "bad status:" <| String.fromInt code
+                            in
+                            Element.none
+
+                        Http.BadBody body ->
+                            let
+                                _ =
+                                    Debug.log "bad body" body
+                            in
+                            Element.none
+                Ok validRanking ->
+                    Debug.todo ""
+    in 
+
     case model.pages of
         Setup ->
             column [ Element.centerX, Element.moveDown 200, Element.scale 1.9 ]
-                [ Element.map SetupMsg <| Setup.view model.setup
+                [ Element.map SetupM <| Setup.view model.setup
                 , switchButton "next"
                 ]
 
@@ -108,13 +190,7 @@ view model =
                 , width fill
                 , height fill
                 ]
-                [ Element.map RankingMsg <| Ranking.view model.ranking
+                [ Element.map RankingM <| Ranking.view model.ranking
                 , switchButton "previous"
+                , 
                 ]
-
-
-
--- easterEgg : Model -> Element.Element Msg
--- easterEgg model =
---     el [] <|
---         Element.text "you entered easter egg mode\n\n\n\n\n you will die soon\n\n\n\n\n\n\n\n\nboom!!!!\n\n☺☻☺☻§"
