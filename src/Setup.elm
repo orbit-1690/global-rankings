@@ -1,4 +1,4 @@
-module Setup exposing (Model)
+module Setup exposing (Model, Msg, init, update, view)
 
 import Browser
 import Element exposing (Element, el, px, rgb255, text)
@@ -26,27 +26,11 @@ type Msg
     | DistrictFactor Float
     | PlayOffFactor Float
     | OffSeasonFactor Float
-    | Continue
 
 
-main : Program () Model Msg
-main =
-    Browser.sandbox
-        { init = init
-        , view = view
-        , update = update
-        }
-
-
-init : Model
+init : Float -> Float -> Float -> Float -> Int -> Int -> Model
 init =
-    { einsteinFactor = 1
-    , districtFactor = 1
-    , playOffFactor = 1
-    , offSeasonFactor = 1
-    , slider1 = 2017
-    , slider2 = 2019
-    }
+    Model
 
 
 stringToFloat : String -> Float
@@ -102,21 +86,6 @@ factorInput value labelText sendMsg =
             }
 
 
-continueButton : Element Msg
-continueButton =
-    el [ Element.centerX, Element.centerY ] <|
-        Input.button
-            [ Background.color <| Element.rgb255 255 255 255
-            , Border.rounded 7
-            , Font.size 30
-            , Font.color <| Element.rgb255 0 0 200
-            , Border.width 4
-            ]
-            { onPress = Just Continue
-            , label = text "Continue"
-            }
-
-
 biggerYear : Int -> Int -> Int
 biggerYear slider1 slider2 =
     if slider1 > slider2 then
@@ -156,11 +125,8 @@ update msg model =
         OffSeasonFactor value ->
             { model | offSeasonFactor = value }
 
-        Continue ->
-            model
 
-
-view : Model -> Html.Html Msg
+view : Model -> Element.Element Msg
 view model =
     let
         endYear =
@@ -169,24 +135,21 @@ view model =
         startYear =
             smallerYear model.slider1 model.slider2
     in
-    Element.layout [] <|
-        Element.column [ Element.centerX, Element.moveDown 200, Element.scale 1.9 ]
-            [ yearsInput
-                model.slider1
-                (Input.labelAbove [ Font.color <| rgb255 0 0 200, Font.size 43, Element.centerX ] (text "Years:"))
-                (\number -> Slider1 <| round number)
-            , yearsInput
-                model.slider2
-                (Input.labelBelow [ Font.color <| rgb255 0 0 200, Font.size 40, Element.alignLeft ]
-                    (text <| "From " ++ String.fromInt startYear ++ " To " ++ String.fromInt endYear)
-                )
-                (\number -> Slider2 <| round number)
-            , Element.column [ Element.centerX, Element.scale 1.1, Element.moveDown 25 ]
-                [ factorInput model.districtFactor "District Factor:       " (\number -> DistrictFactor <| stringToFloat number)
-                , factorInput model.offSeasonFactor "Off Season Factor:" (\number -> OffSeasonFactor <| stringToFloat number)
-                , factorInput model.playOffFactor "PlayOff Factor:      " (\number -> PlayOffFactor <| stringToFloat number)
-                , factorInput model.einsteinFactor "Einstein Factor:     " (\number -> EinsteinFactor <| stringToFloat number)
-                , continueButton
-                ]
+    Element.column []
+        [ yearsInput
+            model.slider1
+            (Input.labelAbove [ Font.color <| rgb255 0 0 200, Font.size 43, Element.centerX ] (text "Years:"))
+            (\number -> Slider1 <| round number)
+        , yearsInput
+            model.slider2
+            (Input.labelBelow [ Font.color <| rgb255 0 0 200, Font.size 40, Element.alignLeft ]
+                (text <| "From " ++ String.fromInt startYear ++ " To " ++ String.fromInt endYear)
+            )
+            (\number -> Slider2 <| round number)
+        , Element.column [ Element.centerY, Element.centerX, Element.scale 1.1, Element.moveDown 25 ]
+            [ factorInput model.districtFactor "District Factor:       " (\number -> DistrictFactor <| stringToFloat number)
+            , factorInput model.offSeasonFactor "Off Season Factor:" (\number -> OffSeasonFactor <| stringToFloat number)
+            , factorInput model.playOffFactor "PlayOff Factor:      " (\number -> PlayOffFactor <| stringToFloat number)
+            , factorInput model.einsteinFactor "Einstein Factor:     " (\number -> EinsteinFactor <| stringToFloat number)
             ]
-
+        ]

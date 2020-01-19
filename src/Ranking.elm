@@ -85,7 +85,6 @@ getNeededList neededInPage zipper =
     List.take neededInPage <| current zipper :: after zipper
 
 
-
 init : Model
 init =
     let
@@ -98,22 +97,14 @@ init =
 view : Model -> Element.Element Msg
 view model =
     column
-        [ Background.color lightBlue
-        , padding 10
-        , spacing 10
-        , width fill
-        , height fill
-        ]
-        [ arrangementThePage <| getNeededList model.inPage model.teams
+        [ centerX ]
+        [ text <| String.concat <| List.map teamToString <| getNeededList model.inPage model.teams
         , button
             [ Border.rounded 10
             , Background.gradient
                 { angle = 2
                 , steps = [ purple, orange, blueGreen ]
                 }
-            , center
-            , centerX
-            , centerY
             , width <| maximum 350 <| fill
             ]
             { onPress = Just NextPage
