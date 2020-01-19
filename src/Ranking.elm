@@ -98,7 +98,7 @@ view : Model -> Element.Element Msg
 view model =
     column
         [ centerX ]
-        [ text <| String.concat <| List.map teamToString <| getNeededList model.inPage model.teams
+        [ arrangementThePage <| getNeededList 3 model.teams
         , button
             [ Border.rounded 10
             , Background.gradient

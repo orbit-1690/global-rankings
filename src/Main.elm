@@ -139,8 +139,8 @@ view model =
     let
         rankingDisplay : Element.Element Msg
         rankingDisplay =
-            case rankings of
-                Err httpError ->
+            case model.rankings of
+                RemoteData.Failure httpError ->
                     case httpError of
                         Http.BadUrl badUrl ->
                             Element.text <| "bad url" ++ badUrl
@@ -151,6 +151,7 @@ view model =
                                     Debug.log "timeout" ""
                             in
                             Element.none
+
                         Http.NetworkError ->
                             let
                                 _ =
@@ -171,10 +172,17 @@ view model =
                                     Debug.log "bad body" body
                             in
                             Element.none
-                Ok validRanking ->
-                    Debug.todo ""
-    in 
 
+                RemoteData.Success validRanking ->
+                    Element.none
+
+                _ ->
+                    let
+                        _ =
+                            Debug.log "not set yey"
+                    in
+                    Element.none
+    in
     case model.pages of
         Setup ->
             column [ Element.centerX, Element.moveDown 200, Element.scale 1.9 ]
@@ -192,5 +200,5 @@ view model =
                 ]
                 [ Element.map RankingM <| Ranking.view model.ranking
                 , switchButton "previous"
-                , 
+                , switchButton "next page"
                 ]
