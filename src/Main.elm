@@ -82,6 +82,11 @@ switchButton string =
             }
 
 
+teamtoString : RankedTeam -> String
+teamtoString team =
+    team.name ++ " " ++ String.fromInt team.position
+
+
 rankingParser : JD.Decoder TeamRankings
 rankingParser =
     JD.map2 RankedTeam (JD.field "team_key" JD.string) (JD.field "rank" JD.int)
@@ -174,12 +179,12 @@ view model =
                             Element.none
 
                 RemoteData.Success validRanking ->
-                    Element.none
+                    text <| String.concat <| List.map teamtoString validRanking
 
                 _ ->
                     let
                         _ =
-                            Debug.log "not set yey"
+                            Debug.log "not set yet"
                     in
                     Element.none
     in
@@ -201,4 +206,5 @@ view model =
                 [ Element.map RankingM <| Ranking.view model.ranking
                 , switchButton "previous"
                 , switchButton "next page"
+                , rankingDisplay
                 ]
