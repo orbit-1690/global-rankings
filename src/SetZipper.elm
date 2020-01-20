@@ -1,23 +1,48 @@
-module SetZipper exposing (Team, createZipper)
+module SetZipper exposing (Model, RankedTeam, TeamRankings, createZipper)
 
+import Browser
+import Colors exposing (black, blue, blueGreen, lightBlue, orange, purple, sky, white)
+import Element exposing (centerX, centerY, column, el, fill, height, html, layout, maximum, padding, rgb255, shrink, spacing, text, width)
+import Element.Background as Background
+import Element.Border as Border
+import Element.Font as Font exposing (center)
+import Element.Input as Input exposing (button)
+import Http
+import Json.Decode as JD
 import List.Zipper exposing (Zipper, fromCons)
+import Maybe
+import RemoteData
+import String
 
 
-type alias Team =
-    { number : Int
-    , name : String
-    , score : Int
+type alias TeamRankings =
+    List RankedTeam
+
+
+type alias RankedTeam =
+    { name : String
+    , position : Int
     }
 
 
-createZipper : Zipper Team
-createZipper =
-    fromCons { number = 1690, name = "Orbit", score = 50 }
-        [ { number = 254, name = "Cheezy Poofs", score = 49 }
-        , { number = 4319, name = "Ladies First", score = -200 }
-        , { number = 42, name = "Fake", score = 42 }
-        , { number = 4319, name = "Ladies First", score = -300 }
-        , { number = 42, name = "Fake", score = 42 }
-        , { number = 4319, name = "Ladies First", score = -400 }
-        , { number = 42, name = "Fake", score = 42 }
-        ]
+type alias Model =
+    { rankings : RemoteData.RemoteData Http.Error TeamRankings }
+
+
+rankingDisplay : Model -> TeamRankings
+rankingDisplay model =
+    case model.rankings of
+        RemoteData.Success validRanking ->
+            validRanking
+
+        _ ->
+            let
+                _ =
+                    Debug.log "didn't succeed"
+            in
+            []
+
+
+createZipper : Model -> Zipper RankedTeam
+createZipper model =
+    fromCons { name = "Open", position = 0 } <| rankingDisplay model

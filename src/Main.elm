@@ -9,9 +9,11 @@ import Element.Font as Font exposing (center)
 import Element.Input as Input exposing (button)
 import Http
 import Json.Decode as JD
+import List.Zipper exposing (Zipper, fromCons)
 import Maybe
 import Ranking
 import RemoteData
+import SetZipper exposing (RankedTeam, TeamRankings)
 import Setup exposing (Model)
 import String
 
@@ -38,6 +40,14 @@ type Msg
     | GotRankings (RemoteData.RemoteData Http.Error TeamRankings)
 
 
+type alias Model =
+    { setup : Setup.Model
+    , ranking : Ranking.Model
+    , pages : Pages
+    , rankings : RemoteData.RemoteData Http.Error TeamRankings
+    }
+
+
 type alias TeamRankings =
     List RankedTeam
 
@@ -45,14 +55,6 @@ type alias TeamRankings =
 type alias RankedTeam =
     { name : String
     , position : Int
-    }
-
-
-type alias Model =
-    { setup : Setup.Model
-    , ranking : Ranking.Model
-    , pages : Pages
-    , rankings : RemoteData.RemoteData Http.Error TeamRankings
     }
 
 
@@ -82,11 +84,6 @@ switchButton string =
             }
 
 
-teamtoString : RankedTeam -> String
-teamtoString team =
-    team.name ++ " " ++ String.fromInt team.position
-
-
 rankingParser : JD.Decoder TeamRankings
 rankingParser =
     JD.map2 RankedTeam (JD.field "team_key" JD.string) (JD.field "rank" JD.int)
@@ -97,9 +94,9 @@ rankingParser =
 init : ( Model, Cmd Msg )
 init =
     ( { setup = Setup.init 1 1 1 1 2017 2020
-      , ranking = Ranking.init
       , pages = Setup
       , rankings = RemoteData.Loading
+      , ranking = Ranking.init RemoteData.Loading
       }
     , Http.get
         { url = "http://localhost:1690/TBA"
@@ -141,53 +138,6 @@ update msg model =
 
 view : Model -> Element.Element Msg
 view model =
-    let
-        rankingDisplay : Element.Element Msg
-        rankingDisplay =
-            case model.rankings of
-                RemoteData.Failure httpError ->
-                    case httpError of
-                        Http.BadUrl badUrl ->
-                            Element.text <| "bad url" ++ badUrl
-
-                        Http.Timeout ->
-                            let
-                                _ =
-                                    Debug.log "timeout" ""
-                            in
-                            Element.none
-
-                        Http.NetworkError ->
-                            let
-                                _ =
-                                    Debug.log "network error" ""
-                            in
-                            Element.none
-
-                        Http.BadStatus code ->
-                            let
-                                _ =
-                                    Debug.log "bad status:" <| String.fromInt code
-                            in
-                            Element.none
-
-                        Http.BadBody body ->
-                            let
-                                _ =
-                                    Debug.log "bad body" body
-                            in
-                            Element.none
-
-                RemoteData.Success validRanking ->
-                    text <| String.concat <| List.map teamtoString validRanking
-
-                _ ->
-                    let
-                        _ =
-                            Debug.log "not set yet"
-                    in
-                    Element.none
-    in
     case model.pages of
         Setup ->
             column [ Element.centerX, Element.moveDown 200, Element.scale 1.9 ]
@@ -206,5 +156,4 @@ view model =
                 [ Element.map RankingM <| Ranking.view model.ranking
                 , switchButton "previous"
                 , switchButton "next page"
-                , rankingDisplay
                 ]

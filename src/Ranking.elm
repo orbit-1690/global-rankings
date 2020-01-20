@@ -7,24 +7,19 @@ import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font exposing (center)
 import Element.Input as Input exposing (button)
+import Http
+import Json.Decode as JD
 import List.Extra exposing (count, getAt, takeWhileRight)
-import List.Zipper exposing (Zipper, after, current, isLast, next, toList, withDefault)
+import List.Zipper exposing (Zipper, after, current, fromCons, isLast, next, toList, withDefault)
 import Maybe
-import SetZipper exposing (Team, createZipper)
+import RemoteData
+import SetZipper exposing (RankedTeam, TeamRankings)
+import Setup exposing (Model)
 import String
 
 
-main : Program () Model Msg
-main =
-    Browser.sandbox
-        { init = init
-        , view = view >> layout []
-        , update = update
-        }
-
-
 type alias Model =
-    { teams : Zipper Team
+    { teams : Zipper RankedTeam
     , isShowingInfo : Bool
     , inPage : Int
     }
@@ -33,6 +28,25 @@ type alias Model =
 type Msg
     = NextPage
     | OpenInfo
+
+
+rankingDisplay : RemoteData.RemoteData Http.Error TeamRankings -> TeamRankings
+rankingDisplay rank =
+    case rank of
+        RemoteData.Success validRanking ->
+            validRanking
+
+        _ ->
+            let
+                _ =
+                    Debug.log "didn't succeed"
+            in
+            []
+
+
+createZipper : RemoteData.RemoteData Http.Error TeamRankings -> Zipper RankedTeam
+createZipper rank =
+    fromCons { name = "Open", position = 0 } <| rankingDisplay rank
 
 
 moveZipperBy : Int -> Zipper a -> Zipper a
@@ -44,7 +58,7 @@ moveZipperBy moveBy zipper =
         moveZipperBy (moveBy - 1) <| withDefault (current zipper) <| next zipper
 
 
-arrangementThePage : List Team -> Element.Element Msg
+arrangementThePage : List RankedTeam -> Element.Element Msg
 arrangementThePage listOfTeams =
     table []
         { data = listOfTeams
@@ -58,23 +72,17 @@ arrangementThePage listOfTeams =
                             , label = text ">"
                             }
               }
-            , { header = text "Number"
-              , width = fill
-              , view =
-                    \team ->
-                        text <| String.fromInt team.number
-              }
-            , { header = text "Score"
-              , width = fill
-              , view =
-                    \team ->
-                        text <| String.fromInt team.score
-              }
             , { header = text "Name"
               , width = fill
               , view =
                     \team ->
                         text team.name
+              }
+            , { header = text "Position"
+              , width = fill
+              , view =
+                    \team ->
+                        text <| String.fromInt team.position
               }
             ]
         }
@@ -85,13 +93,13 @@ getNeededList neededInPage zipper =
     List.take neededInPage <| current zipper :: after zipper
 
 
-init : Model
-init =
+init : RemoteData.RemoteData Http.Error TeamRankings -> Model
+init rankings =
     let
         inPageUp =
-            min 3 <| List.length <| toList createZipper
+            min 3 << List.length << toList <| createZipper rankings
     in
-    { teams = createZipper, isShowingInfo = False, inPage = inPageUp }
+    { teams = createZipper rankings, isShowingInfo = False, inPage = inPageUp }
 
 
 view : Model -> Element.Element Msg
