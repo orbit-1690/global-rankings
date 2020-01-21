@@ -41,7 +41,7 @@ rankingDisplay rank =
                 _ =
                     Debug.log "didn't succeed"
             in
-            []
+            [ { name = "error", position = 0 } ]
 
 
 createZipper : RemoteData.RemoteData Http.Error TeamRankings -> Zipper RankedTeam
