@@ -1,4 +1,4 @@
-module Setup exposing (Model, Msg, init, update, view)
+module Setup exposing (Model, Msg, init, main, update, view)
 
 import Element exposing (Element, column, el, px, rgb255, text)
 import Element.Background as Background
@@ -24,6 +24,16 @@ type Msg
     | DistrictFactor String
     | PlayOffFactor String
     | OffSeasonFactor String
+
+
+main : Program () Model Msg
+main =
+    Browser.sandbox
+        { init = init
+        , view = Element.layout [] << view
+        , update = update
+        }
+
 
 
 init : Float -> Float -> Float -> Float -> Int -> Int -> Model
@@ -112,6 +122,7 @@ view model =
             model.slider1
             (Input.labelAbove [ Font.color <| rgb255 0 0 200, Font.size 43, Element.centerX ] <| text "Years:")
             (Slider1 << round)
+
         , yearsInput
             model.slider2
             (Input.labelBelow [ Font.color <| rgb255 0 0 200, Font.size 40, Element.alignLeft ]
