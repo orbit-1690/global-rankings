@@ -121,38 +121,29 @@ init rankings =
 
 view : Model -> Element.Element Msg
 view model =
-    let
-        valid : Msg
-        valid =
-            case model.ranking of
-                RemoteData.Success validRanking ->
-                    NextPage
+    case model.ranking of
+        RemoteData.Success _ ->
+            column
+                [ centerX ]
+                [ arrangementThePage <| getNeededList 3 model.teams
+                , button
+                    [ Border.rounded 10
+                    , Background.gradient
+                        { angle = 2
+                        , steps = [ purple, orange, blueGreen ]
+                        }
+                    , width <| maximum 350 <| fill
+                    ]
+                    { onPress = Just NextPage
+                    , label = text "Next Page"
+                    }
+                ]
 
-                RemoteData.Loading ->
-                    GotRanking model.ranking
+        RemoteData.Loading ->
+            text "Loading..."
 
-                _ ->
-                    let
-                        _ =
-                            Debug.log "didn't succeed"
-                    in
-                    GotRanking model.ranking
-    in
-    column
-        [ centerX ]
-        [ arrangementThePage <| getNeededList 3 model.teams
-        , button
-            [ Border.rounded 10
-            , Background.gradient
-                { angle = 2
-                , steps = [ purple, orange, blueGreen ]
-                }
-            , width <| maximum 350 <| fill
-            ]
-            { onPress = Just valid
-            , label = text "Next Page"
-            }
-        ]
+        _ ->
+            text "error"
 
 
 update : Msg -> Model -> Model
@@ -174,4 +165,4 @@ update msg model =
                 { model | isShowingInfo = True }
 
         GotRanking valid ->
-            { model | teams = createZipper valid }
+            { model | ranking = valid, teams = createZipper valid }
