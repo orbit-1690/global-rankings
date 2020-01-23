@@ -151,6 +151,7 @@ view model =
                                     Debug.log "timeout" ""
                             in
                             Element.none
+
                         Http.NetworkError ->
                             let
                                 _ =
@@ -171,10 +172,10 @@ view model =
                                     Debug.log "bad body" body
                             in
                             Element.none
-                Ok validRanking ->
-                    Debug.todo ""
-    in 
 
+                Ok validRanking ->
+                    List.map (\ranking -> Element.e)
+    in
     case model.pages of
         Setup ->
             column [ Element.centerX, Element.moveDown 200, Element.scale 1.9 ]
@@ -192,5 +193,4 @@ view model =
                 ]
                 [ Element.map RankingM <| Ranking.view model.ranking
                 , switchButton "previous"
-                , 
                 ]

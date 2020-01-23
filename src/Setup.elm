@@ -32,8 +32,8 @@ init =
 
 
 stringToFloat : String -> Float
-stringToFloat number =
-    Maybe.withDefault 0 <| String.toFloat number
+stringToFloat =
+    Maybe.withDefault 0 << String.toFloat
 
 
 yearsInput : Int -> Input.Label Msg -> (Float -> Msg) -> Element Msg
@@ -111,13 +111,13 @@ view model =
         [ yearsInput
             model.slider1
             (Input.labelAbove [ Font.color <| rgb255 0 0 200, Font.size 43, Element.centerX ] <| text "Years:")
-            (\number -> Slider1 <| round number)
+            (Slider1 << round)
         , yearsInput
             model.slider2
             (Input.labelBelow [ Font.color <| rgb255 0 0 200, Font.size 40, Element.alignLeft ]
                 (text <| "From " ++ String.fromInt startYear ++ " To " ++ String.fromInt endYear)
             )
-            (\number -> Slider2 <| round number)
+            (Slider2 << round)
         , column [ Element.centerY, Element.centerX, Element.scale 1.1, Element.moveDown 25 ]
             [ factorInput model.districtFactor "District Factor:       " DistrictFactor
             , factorInput model.offSeasonFactor "Off Season Factor:" OffSeasonFactor

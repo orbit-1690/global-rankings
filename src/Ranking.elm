@@ -26,7 +26,7 @@ main =
 type alias Model =
     { teams : Zipper Team
     , isShowingInfo : Bool
-    , inPage : Int
+    , pageIndex : Int
     }
 
 
@@ -43,28 +43,25 @@ moveZipperBy moveBy zipper =
         moveZipperBy (moveBy - 1) <| withDefault (current zipper) <| next zipper
 
 
-arrangementThePage : List Team -> Element.Element Msg
-arrangementThePage listOfTeams =
+arrangeThePage : List Team -> Element.Element Msg
+arrangeThePage listOfTeams =
     table []
         { data = listOfTeams
         , columns =
             [ { header = Element.text "Number"
               , width = fill
               , view =
-                    \team ->
-                        Element.text <| String.fromInt team.number
+                    Element.text << String.fromInt << .number
               }
             , { header = Element.text "Score"
               , width = fill
               , view =
-                    \team ->
-                        Element.text <| String.fromInt team.score
+                    Element.text << String.fromInt << .score
               }
             , { header = Element.text "Name"
               , width = fill
               , view =
-                    \team ->
-                        Element.text team.name
+                    Element.text << .name
               }
             ]
         }
@@ -90,7 +87,7 @@ init =
         inPageUp =
             min 2 <| List.length <| toList createZipper
     in
-    { teams = createZipper, isShowingInfo = False, inPage = inPageUp }
+    { teams = createZipper, isShowingInfo = False, pageIndex = inPageUp }
 
 
 view : Model -> Element.Element Msg
@@ -102,7 +99,7 @@ view model =
         , width fill
         , height fill
         ]
-        [ arrangementThePage <| getNeededList model.inPage model.teams
+        [ arrangeThePage <| getNeededList model.pageIndex model.teams
         , button
             [ Border.rounded 10
             , Background.gradient
@@ -120,10 +117,10 @@ view model =
 update : Msg -> Model -> Model
 update msg model =
     let
-        inPage : Int
-        inPage =
-            min 2 (List.length <| toList model.teams)
+        pageIndex : Int
+        pageIndex =
+            min 2 <| List.length <| toList model.teams
     in
     case msg of
         NextPage ->
-            { model | teams = moveZipperBy inPage model.teams, inPage = inPage }
+            { model | teams = moveZipperBy pageIndex model.teams, pageIndex = pageIndex }
