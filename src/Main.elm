@@ -42,7 +42,7 @@ type Msg
 
 type alias Model =
     { setup : Setup.Model
-    , ranking : Ranking.Model
+    , ranking : ( Ranking.Model, Cmd Ranking.Msg )
     , pages : Pages
     , rankings : RemoteData.RemoteData Http.Error TeamRankings
     }
@@ -84,13 +84,6 @@ switchButton string =
             }
 
 
-rankingParser : JD.Decoder TeamRankings
-rankingParser =
-    JD.map2 RankedTeam (JD.field "team_key" JD.string) (JD.field "rank" JD.int)
-        |> JD.list
-        |> JD.field "rankings"
-
-
 init : ( Model, Cmd Msg )
 init =
     ( { setup = Setup.init 1 1 1 1 2017 2020
@@ -98,10 +91,7 @@ init =
       , rankings = RemoteData.Loading
       , ranking = Ranking.init RemoteData.Loading
       }
-    , Http.get
-        { url = "http://localhost:1690/TBA"
-        , expect = Http.expectJson (GotRankings << RemoteData.fromResult) rankingParser
-        }
+    , Cmd.none
     )
 
 
@@ -109,7 +99,7 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         RankingM rMsg ->
-            ( { model | ranking = Ranking.update rMsg model.ranking }, Cmd.none )
+            ( { model | ranking = ( Ranking.update rMsg <| Tuple.first model.ranking, Tuple.second model.ranking ) }, Cmd.none )
 
         SetupM sMsg ->
             ( { model | setup = Setup.update sMsg model.setup }, Cmd.none )
@@ -153,7 +143,7 @@ view model =
                 , width fill
                 , height fill
                 ]
-                [ Element.map RankingM <| Ranking.view model.ranking
+                [ Element.map RankingM <| Ranking.view <| Tuple.first model.ranking
                 , switchButton "previous"
                 , switchButton "next page"
                 ]

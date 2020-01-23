@@ -22,12 +22,14 @@ type alias Model =
     { teams : Zipper RankedTeam
     , isShowingInfo : Bool
     , inPage : Int
+    , ranking : RemoteData.RemoteData Http.Error TeamRankings
     }
 
 
 type Msg
     = NextPage
     | OpenInfo
+    | GotRanking (RemoteData.RemoteData Http.Error TeamRankings)
 
 
 rankingDisplay : RemoteData.RemoteData Http.Error TeamRankings -> TeamRankings
@@ -35,6 +37,9 @@ rankingDisplay rank =
     case rank of
         RemoteData.Success validRanking ->
             validRanking
+
+        RemoteData.Loading ->
+            [ { name = "Loding...", position = 0 } ]
 
         _ ->
             let
@@ -93,17 +98,46 @@ getNeededList neededInPage zipper =
     List.take neededInPage <| current zipper :: after zipper
 
 
-init : RemoteData.RemoteData Http.Error TeamRankings -> Model
+rankingParser : JD.Decoder TeamRankings
+rankingParser =
+    JD.map2 RankedTeam (JD.field "team_key" JD.string) (JD.field "rank" JD.int)
+        |> JD.list
+        |> JD.field "rankings"
+
+
+init : RemoteData.RemoteData Http.Error TeamRankings -> ( Model, Cmd Msg )
 init rankings =
     let
         inPageUp =
             min 3 << List.length << toList <| createZipper rankings
     in
-    { teams = createZipper rankings, isShowingInfo = False, inPage = inPageUp }
+    ( { teams = createZipper rankings, isShowingInfo = False, inPage = inPageUp, ranking = RemoteData.Loading }
+    , Http.get
+        { url = "http://localhost:1690/TBA"
+        , expect = Http.expectJson (GotRanking << RemoteData.fromResult) rankingParser
+        }
+    )
 
 
 view : Model -> Element.Element Msg
 view model =
+    let
+        valid : Msg
+        valid =
+            case model.ranking of
+                RemoteData.Success validRanking ->
+                    NextPage
+
+                RemoteData.Loading ->
+                    GotRanking model.ranking
+
+                _ ->
+                    let
+                        _ =
+                            Debug.log "didn't succeed"
+                    in
+                    GotRanking model.ranking
+    in
     column
         [ centerX ]
         [ arrangementThePage <| getNeededList 3 model.teams
@@ -115,7 +149,7 @@ view model =
                 }
             , width <| maximum 350 <| fill
             ]
-            { onPress = Just NextPage
+            { onPress = Just valid
             , label = text "Next Page"
             }
         ]
@@ -138,3 +172,6 @@ update msg model =
 
             else
                 { model | isShowingInfo = True }
+
+        GotRanking valid ->
+            { model | teams = createZipper valid }
