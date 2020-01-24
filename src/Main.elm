@@ -128,6 +128,46 @@ update msg model =
 
 view : Model -> Element.Element Msg
 view model =
+    let
+        rankingDisplay : Element.Element Msg
+        rankingDisplay =
+            case rankings of
+                Err httpError ->
+                    case httpError of
+                        Http.BadUrl badUrl ->
+                            Element.text <| "bad url" ++ badUrl
+
+                        Http.Timeout ->
+                            let
+                                _ =
+                                    Debug.log "timeout" ""
+                            in
+                            Element.none
+
+                        Http.NetworkError ->
+                            let
+                                _ =
+                                    Debug.log "network error" ""
+                            in
+                            Element.none
+
+                        Http.BadStatus code ->
+                            let
+                                _ =
+                                    Debug.log "bad status:" <| String.fromInt code
+                            in
+                            Element.none
+
+                        Http.BadBody body ->
+                            let
+                                _ =
+                                    Debug.log "bad body" body
+                            in
+                            Element.none
+
+                Ok validRanking ->
+                    List.map (\ranking -> Element.e)
+    in
     case model.pages of
         Setup ->
             column [ Element.centerX, Element.moveDown 200, Element.scale 1.9 ]
