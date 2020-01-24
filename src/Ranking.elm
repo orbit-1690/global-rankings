@@ -21,7 +21,7 @@ import String
 type alias Model =
     { teams : Zipper RankedTeam
     , isShowingInfo : Bool
-    , inPage : Int
+    , pageIndex : Int
     , ranking : RemoteData.RemoteData Http.Error TeamRankings
     }
 
@@ -63,8 +63,8 @@ moveZipperBy moveBy zipper =
         moveZipperBy (moveBy - 1) <| withDefault (current zipper) <| next zipper
 
 
-arrangementThePage : List RankedTeam -> Element.Element Msg
-arrangementThePage listOfTeams =
+arrangeThePage : List Team -> Element.Element Msg
+arrangeThePage listOfTeams =
     table []
         { data = listOfTeams
         , columns =
@@ -80,14 +80,12 @@ arrangementThePage listOfTeams =
             , { header = text "Name"
               , width = fill
               , view =
-                    \team ->
-                        text team.name
+                    Element.text << String.fromInt << .name
               }
             , { header = text "Position"
               , width = fill
               , view =
-                    \team ->
-                        text <| String.fromInt team.position
+                    Element.text << String.fromInt .position
               }
             ]
         }
@@ -111,7 +109,7 @@ init rankings =
         inPageUp =
             min 3 << List.length << toList <| createZipper rankings
     in
-    ( { teams = createZipper rankings, isShowingInfo = False, inPage = inPageUp, ranking = RemoteData.Loading }
+    ( { teams = createZipper rankings, isShowingInfo = False, pageIndex = inPageUp, ranking = RemoteData.Loading }
     , Http.get
         { url = "http://localhost:1690/TBA"
         , expect = Http.expectJson (GotRanking << RemoteData.fromResult) rankingParser
@@ -149,13 +147,13 @@ view model =
 update : Msg -> Model -> Model
 update msg model =
     let
-        inPage : Int
-        inPage =
-            min 3 (List.length <| toList model.teams)
+        pageIndex : Int
+        pageIndex =
+            min 3 <| List.length <| toList model.teams
     in
     case msg of
         NextPage ->
-            { model | teams = moveZipperBy inPage model.teams, inPage = inPage }
+            { model | teams = moveZipperBy pageIndex model.teams, pageIndex = pageIndex }
 
         OpenInfo ->
             if model.isShowingInfo then
